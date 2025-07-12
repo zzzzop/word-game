@@ -128,20 +128,41 @@
         /* 移动端特定样式 */
         @media (max-width: 480px) {
             .word-box {
-                width: calc(50% - 10px);
-                height: 60px;
-                line-height: 60px;
-                font-size: 14px;
-            }
-            button, select, input {
-                padding: 6px 12px;
-                font-size: 13px;
-            }
-            #studentName {
-                width: 120px;
-            }
+                width: calc(33.3% - 10px); /* 改为3列布局 */
+            	height: 50px; /* 高度减小 */
+           	line-height: 50px; /* 行高相应调整 */
+           	font-size: 12px; /* 字体缩小 */
+            	margin: 3px; /* 边距减小 */
+            	padding: 0 2px; /* 添加内边距防止文字溢出 */
+            	border-radius: 6px; /* 圆角减小 */
         }
-    </style>
+        button, select, input {
+            	padding: 5px 8px; /* 按钮内边距减小 */
+            	font-size: 12px; /* 按钮字体缩小 */
+            	margin: 2px; /* 按钮边距减小 */
+        }
+        #studentName {
+            width: 100px; /* 输入框宽度减小 *
+        }
+        #timer, #score, #lessonInfo {
+            	font-size: 14px; /* 信息文字缩小 */
+            	margin: 5px; /* 边距减小 */
+        }
+        h1 {
+            font-size: 20px; /* 标题缩小 */
+            margin: 5px 0; /* 边距减小 */
+        }
+    }
+
+    /* 新增超小屏幕适配 */
+    @media (max-width: 360px) {
+        .word-box {
+            font-size: 11px; /* 更小的字体 */
+            height: 45px; /* 更小的高度 */
+            line-height: 45px;
+        }
+    }
+</style>
 </head>
 <body>
     <h1>日语单词消消乐</h1>
@@ -274,9 +295,9 @@
             currentGroup = document.getElementById('group').value;
             const groupIndex = parseInt(currentGroup) - 1;
             
-            // 从当前课程组中随机选择16个单词(如果不足16个则全选)
+            // 从当前课程组中随机选择12个单词(如果不足12个则全选)
             const allWords = [...wordData[currentLesson].groups[groupIndex]];
-            const selectedWords = shuffle(allWords).slice(0, Math.min(16, allWords.length));
+            const selectedWords = shuffle(allWords).slice(0, Math.min(12, allWords.length));
             
             currentPairs = [];
             selectedWords.forEach(pair => {
