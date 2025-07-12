@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>日语单词消消乐</title>
+    <style>
+        body {
+            background-color: #ffebee;
+            font-family: "黑体", sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #gameContainer {
+            margin: 10px auto;
+            max-width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .word-box {
+            background-color: #f8bbd0;
+            border: 2px solid #f48fb1;
+            border-radius: 10px;
+            width: calc(50% - 15px);
+            height: 70px;
+            margin: 5px;
+            line-height: 70px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .selected {
+            background-color: #f06292;
+            transform: scale(1.05);
+            color: white;
+        }
+        .matched {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #controls {
+            margin: 10px;
+            padding: 10px;
+            background-color: #fce4ec;
+            border-radius: 10px;
+        }
+        button, select, input {
+            background-color: #f48fb1;
+            border: none;
+            padding: 8px 15px;
+            margin: 4px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            color: white;
+            width: auto;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        #timer, #score, #lessonInfo {
+            font-size: 18px;
+            margin: 8px;
+            color: #ad1457;
+        }
+        h1 {
+            color: #880e4f;
+            font-size: 24px;
+            margin: 10px 0;
+        }
+        #leaderboard {
+            background-color: #fce4ec;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 15px auto;
+            max-width: 100%;
+        }
+        #leaderboard h2 {
+            color: #880e4f;
+            margin-top: 0;
+            font-size: 20px;
+        }
+        #leaderboard ol {
+            text-align: left;
+            padding-left: 20px;
+        }
+        #leaderboard li {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        .leaderboard-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 15px;
+        }
+        .leaderboard-section {
+            flex: 1;
+            min-width: 280px;
+            background-color: #f8bbd0;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        .leaderboard-title {
+            font-weight: bold;
+            margin: 8px 0;
+            color: #880e4f;
+            text-align: center;
+            font-size: 18px;
+        }
+        
+        /* 移动端特定样式 */
+        @media (max-width: 480px) {
+            .word-box {
+                width: calc(33.3% - 10px); /* 改为3列布局 */
+            	height: 50px; /* 高度减小 */
+           	line-height: 50px; /* 行高相应调整 */
+           	font-size: 12px; /* 字体缩小 */
+            	margin: 3px; /* 边距减小 */
+            	padding: 0 2px; /* 添加内边距防止文字溢出 */
+            	border-radius: 6px; /* 圆角减小 */
+        }
+        button, select, input {
+            	padding: 5px 8px; /* 按钮内边距减小 */
+            	font-size: 12px; /* 按钮字体缩小 */
+            	margin: 2px; /* 按钮边距减小 */
+        }
+        #studentName {
+            width: 100px; /* 输入框宽度减小 *
+        }
+        #timer, #score, #lessonInfo {
+            	font-size: 14px; /* 信息文字缩小 */
+            	margin: 5px; /* 边距减小 */
+        }
+        h1 {
+            font-size: 20px; /* 标题缩小 */
+            margin: 5px 0; /* 边距减小 */
+        }
+    }
+
+    /* 新增超小屏幕适配 */
+    @media (max-width: 360px) {
+        .word-box {
+            font-size: 11px; /* 更小的字体 */
+            height: 45px; /* 更小的高度 */
+            line-height: 45px;
+        }
+    }
+</style>
+</head>
+<body>
+    <h1>日语单词消消乐</h1>
+    <div id="controls">
+        <input type="text" id="studentName" placeholder="输入学生姓名" style="width: 140px;">
+        <button id="startBtn">開始</button>
+        <button id="endBtn">終了</button>
+        <select id="lesson">
+            <option value="lesson7">第7课</option>
+            <option value="lesson8">第8课</option>
+            <option value="lesson9">第9课</option>
+        </select>
+        <select id="group">
+            <option value="1">发音对照组</option>
+            <option value="2">意思对照组</option>
+            <option value="3">大杂烩组</option>
+        </select>
+        <div id="lessonInfo"></div>
+        <div id="timer">残り時間: 0秒</div>
+        <div id="score">得点: 0</div>
+    </div>
+    <div id="gameContainer"></div>
+
+    <div id="leaderboard">
+        <h2>🏆 成绩排行榜</h2>
+        <button id="clearLeaderboardBtn">清空排行榜</button>
+        <div id="leaderboardList" class="leaderboard-container">
+            <!-- 排行榜内容将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <script>
+        let currentPairs = [];
+        let selected = [];
+        let score = 0;
+        let timer;
+        let timeLeft = 0;
+        let currentLesson = '';
+        let currentGroup = '';
+        let studentName = '';
+        
+        // 初始化排行榜
+        let leaderboard = JSON.parse(localStorage.getItem('wordGameLeaderboard')) || [];
+        updateLeaderboard();
+
+        // 使用事件监听器替代onclick属性
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('endBtn').addEventListener('click', endGame);
+        document.getElementById('clearLeaderboardBtn').addEventListener('click', clearLeaderboard);
+
+        const wordData = {
+            lesson7: {
+                groups: [
+                    // 第7课发音对照组(27个单词)
+                    ['そうじ|掃除', 'しみん|市民', 'おとな|大人', 'きたやま|北山', 'あつまる|集まる', 
+                     'おりる|降りる', 'ひろう|拾う', 'すてる|捨てる', 'さんか|参加', 'ちゅうがくせい|中学生',
+                     'なる|成る', 'かん|缶', 'びん|瓶', 'きたない|汚い', 'におい|匂い','つかれる|疲れる',
+                     'なくなる|無くなる', 'とおる|通る', 'とちゅう|途中', 'いや|嫌', 'ふくろ|袋','はこ|箱',
+                     'しる|知る', 'しょうちゅうがくせい|小中学生','さむい|寒い','あたたかい|暖かい',
+                     'すむ|住む'], 
+                    // 第7课意思对照组(20个单词)
+                    ['まだ|还，尚未', 'ぜひ|一定，务必', '降りる|下来', '通る|通过', 'そして|然后，而且',
+                     '缶|罐子', 'ビニール|塑料', 'いや|讨厌', '匂い|气味', 'なくなる|丢失，消失',
+                     'おとな|大人', 'おととい|前天', 'あさって|后天','ひがし|东','にし|西','うえ|上',
+                     '匹|小动物单位', '枚|扁平物单位', '台|机械类单位', 'さむい|寒冷', 'あたたかい|暖和'],
+                    // 第7课混搭组(42个单词)
+                    ['そうじ|掃除', 'しみん|市民', 'おとな|大人', 'きたやま|北山', 'あつまる|集まる', 
+                     'ひろう|拾う', 'すてる|捨てる', 'さんか|参加', 'ちゅうがくせい|中学生',
+                     'なる|成る', 'びん|瓶', 'きたない|汚い', 'におい|匂い','つかれる|疲れる',
+                     'とおる|通る', 'とちゅう|途中', 'いや|嫌', 'ふくろ|袋','はこ|箱',
+                     'しる|知る', 'しょうちゅうがくせい|小中学生','さむい|寒い','あたたかい|暖かい',
+                     'すむ|住む','まだ|还，尚未', 'ぜひ|一定，务必', '降りる|下来', 'そして|然后，而且',
+                     '缶|罐子', 'ビニール|塑料', '匂い|气味', 'なくなる|丢失，消失','降る|下雨，下雪',
+                     'おとな|大人', 'おととい|前天', 'あさって|后天','ひがし|东','にし|西','うえ|上',
+                     '匹|小动物单位', '枚|扁平物单位', '台|机械类单位'],
+                ],
+                time: 100
+            },
+            lesson8: {
+                groups: [
+                    // 第8课第1组(15个单词)
+                    ['とくい|得意', 'りょうり|料理', 'からい|辛い', 'ちょっと|有点', 'ゆうめい|有名',
+                     'はじめて|初めて', 'まなぶ|学ぶ', 'ポスター|海报', 'トマト|西红柿', 'たまご|鸡蛋',
+                     'いためもの|炒め物', 'えいよう|栄養', 'たっぷり|充足', 'いろ|颜色', 'とくちょう|特徴'],
+                    // 第8课第2组(15个单词)
+                    ['ピーマン|青椒', 'ぶたにく|豚肉', 'たんぱく質|蛋白质', 'ビタミン|维他命', 'ほうふ|豊富',
+                     'ろうどう|労働', 'さいしょ|最初', 'かたい|硬い', 'しおからい|塩辛い', 'アドバイス|建议',
+                     'やっと|终于', 'せいこう|成功', 'しょくざい|食材', 'かしゅ|歌手', 'せかい|世界'],
+                    // 第8课第3组(15个单词)
+                    ['いちばん|一番', 'いんしょう|印象', 'のこる|残る', 'けんがく|見学', 'つかう|使う',
+                     'かんがえる|考える', 'おしえる|教える', 'しかた|仕方', 'いくら|多少钱', 'つく|着く',
+                     'スポーツ|运动', 'こんしゅう|今週', 'こんばん|今晩', 'せつめい|説明', 'さいご|最後']
+                ],
+                time: 100
+            },
+            lesson9: {
+                groups: [
+                    // 第9课第1组(22个单词)
+                    ['いろいろ|多种多样', 'しごと|仕事', 'おじゃま|お邪魔', 'アイディア|主意', 'おや|父母', 
+                     'はなし|話し', 'りょうしん|両親', 'しゅふ|主婦', 'かいしゃいん|会社员', 'うた|歌',
+                     'うんてんしゅ|運転手', 'かんごし|看護師', 'たすける|帮助', 'じぶん|自分', 'まず|首先',
+                     'ないよう|内容', 'よのなか|世の中', 'まわり|周り', 'けいさつかん|警察官', 'こうばん|交番',
+                     'はたらく|働く', 'じゅうみん|住民'],
+                    // 第9课第2组(22个单词)
+                    ['そうだん|相談', 'トラブル|纠纷', 'じこ|事故', 'たいおう|対応', 'あんぜん|安全',
+                     'まもる|守る', 'きしゃ|記者', 'げんば|現場', 'じょうきょう|状況', 'ほうどう|報道',
+                     'たいへん|大変', 'あぶない|危ない', 'ところ|所', 'じけん|事件', 'こくないがい|国内外',
+                     'さまざま|各种各样', 'できごと|出来事', 'すぐに|马上', 'わかる|分かる', 'はいたつ|配達',
+                     'ばん|晩', 'にもつ|荷物'],
+                    // 第9课第3组(22个单词)
+                    ['かんじゃ|患者', 'とどける|届ける', 'おとしより|お年寄り', 'こめ|米', 'おもい|重い',
+                     'せいかつ|生活', 'やくだつ|役立つ', 'やりがい|价值', 'どう|怎样', 'しんねん|新年',
+                     'おちゃ|お茶', 'つめたい|冷たい', 'のみもの|飲み物', 'らいしゅう|来週', 'はっぴょう|発表',
+                     'しんぶん|新聞', 'かいぎ|会議', 'かいしゃ|会社', 'らいげつ|来月', 'れいぞうこ|冷蔵庫',
+                     'まちがえる|間違える', 'ぶんしょう|文章']
+                ],
+                time: 100
+            }
+        };
+
+        function startGame() {
+            studentName = document.getElementById('studentName').value.trim();
+            if (!studentName) {
+                alert('请输入学生姓名');
+                return;
+            }
+            
+            endGame();
+            currentLesson = document.getElementById('lesson').value;
+            currentGroup = document.getElementById('group').value;
+            const groupIndex = parseInt(currentGroup) - 1;
+            
+            // 从当前课程组中随机选择12个单词(如果不足12个则全选)
+            const allWords = [...wordData[currentLesson].groups[groupIndex]];
+            const selectedWords = shuffle(allWords).slice(0, Math.min(12, allWords.length));
+            
+            currentPairs = [];
+            selectedWords.forEach(pair => {
+                const [kana, meaning] = pair.split('|');
+                currentPairs.push({kana, meaning});
+            });
+            
+            createGameBoard();
+            timeLeft = wordData[currentLesson].time;
+            score = 0;
+            updateScore();
+            updateLessonInfo();
+            startTimer();
+        }
+
+        function createGameBoard() {
+            const container = document.getElementById('gameContainer');
+            container.innerHTML = '';
+
+            // 创建假名卡片 - 使用随机顺序
+            const shuffledKanaPairs = shuffle([...currentPairs]);
+            shuffledKanaPairs.forEach(pair => {
+                const box = document.createElement('div');
+                box.className = 'word-box';
+                box.textContent = pair.kana;
+                box.dataset.type = 'kana';
+                box.dataset.pair = pair.kana + '|' + pair.meaning;
+                
+                // 添加触摸和点击事件
+                box.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    selectPair(this);
+                });
+                box.addEventListener('click', function() {
+                    selectPair(this);
+                });
+                
+                container.appendChild(box);
+            });
+            
+            // 创建含义卡片 - 使用另一个随机顺序
+            const shuffledMeaningPairs = shuffle([...currentPairs]);
+            shuffledMeaningPairs.forEach(pair => {
+                const box = document.createElement('div');
+                box.className = 'word-box';
+                box.textContent = pair.meaning;
+                box.dataset.type = 'meaning';
+                box.dataset.pair = pair.kana + '|' + pair.meaning;
+                
+                // 添加触摸和点击事件
+                box.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    selectPair(this);
+                });
+                box.addEventListener('click', function() {
+                    selectPair(this);
+                });
+                
+                container.appendChild(box);
+            });
+        }
+
+        function updateLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboardList');
+            leaderboardList.innerHTML = '';
+
+            // 定义课程和小组的映射关系
+            const lessonNames = {
+                'lesson7': '第7课',
+                'lesson8': '第8课',
+                'lesson9': '第9课'
+            };
+            const groupNames = {
+                '1': '发音对照',
+                '2': '意思对照',
+                '3': '混搭'
+            };
+
+            // 为每个课程和小组组合创建一个独立的排行榜
+            for (const lessonKey in lessonNames) {
+                for (const groupKey in groupNames) {
+                    // 筛选当前课程和小组的记录
+                    const filteredRecords = leaderboard.filter(record => 
+                        record.lesson === lessonNames[lessonKey] && 
+                        record.group === groupNames[groupKey]
+                    );
+
+                    // 如果有记录才显示
+                    if (filteredRecords.length > 0) {
+                        // 创建排行榜区域
+                        const section = document.createElement('div');
+                        section.className = 'leaderboard-section';
+                        
+                        // 添加标题
+                        const title = document.createElement('div');
+                        title.className = 'leaderboard-title';
+                        title.textContent = `${lessonNames[lessonKey]} ${groupNames[groupKey]}组`;
+                        section.appendChild(title);
+                        
+                        // 创建列表
+                        const ol = document.createElement('ol');
+                        
+                        // 按分数从高到低排序，分数相同时用时少的排在前面
+                        const sortedScores = [...filteredRecords].sort((a, b) => {
+                            if (b.score !== a.score) {
+                                return b.score - a.score;
+                            }
+                            return a.timeUsed - b.timeUsed;
+                        }).slice(0, 5); // 只显示前5名
+
+                        sortedScores.forEach((record, index) => {
+                            const li = document.createElement('li');
+                            li.textContent = `${index + 1}. ${record.studentName}: ${record.score}分`;
+                            ol.appendChild(li);
+                        });
+
+                        section.appendChild(ol);
+                        leaderboardList.appendChild(section);
+                    }
+                }
+            }
+
+            if (leaderboardList.children.length === 0) {
+                leaderboardList.innerHTML = '<div style="padding:10px;text-align:center;">暂无记录</div>';
+            }
+        }
+
+        function saveScore() {
+            try {
+                const lessonNames = {
+                    'lesson7': '第7课',
+                    'lesson8': '第8课',
+                    'lesson9': '第9课'
+                };
+                const groupNames = {
+                    '1': '发音对照',
+                    '2': '意思对照',
+                    '3': '混搭'
+                };
+
+                // 在保存前检查排行榜大小，防止过大
+                if (leaderboard.length > 100) {
+                    leaderboard = leaderboard.slice(-100); // 保留最近100条记录
+                }
+
+                // 计算用时 = 总时间 - 剩余时间
+                const timeUsed = wordData[currentLesson].time - timeLeft;
+                
+                const newRecord = {
+                    studentName: studentName,
+                    score: score,
+                    timeUsed: timeUsed,
+                    lesson: lessonNames[currentLesson],
+                    group: groupNames[currentGroup],
+                    timestamp: new Date().getTime()
+                };
+                
+                leaderboard.push(newRecord);
+                localStorage.setItem('wordGameLeaderboard', JSON.stringify(leaderboard));
+                updateLeaderboard();
+            } catch (e) {
+                console.error("保存分数失败:", e);
+            }
+        }
+
+        function clearLeaderboard() {
+            if (confirm('确定要清空所有排行榜记录吗？此操作不可撤销！')) {
+                leaderboard = [];
+                localStorage.removeItem('wordGameLeaderboard');
+                updateLeaderboard();
+                alert('排行榜已清空');
+            }
+        }
+            
+        function gameSuccess() {
+            clearInterval(timer);
+            saveScore(); // 游戏成功时保存成绩
+            alert(`${studentName} 成功！得分: ${score}`);
+        }
+
+        function gameOver() {
+            clearInterval(timer);
+            saveScore(); // 游戏失败时也保存成绩
+            alert(`${studentName} 時間切れ！`);
+        }
+
+        function shuffle(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function selectPair(box) {
+            if (box.classList.contains('matched')) return;
+            
+            box.classList.add('selected');
+            selected.push(box);
+            
+            if (selected.length === 2) {
+                const first = selected[0];
+                const second = selected[1];
+                
+                // 检查是否一个是假名一个是含义，并且是同一对
+                if (first.dataset.type !== second.dataset.type && 
+                    first.dataset.pair === second.dataset.pair) {
+                    selected.forEach(b => {
+                        b.classList.add('matched');
+                        b.classList.remove('selected');
+                    });
+                    score += 5;
+                    updateScore();
+                    checkGameComplete();
+                } else {
+                    selected.forEach(b => {
+                        setTimeout(() => b.classList.remove('selected'), 500);
+                    });
+                }
+                selected = [];
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            document.getElementById('timer').textContent = `残り時間: ${timeLeft}秒`;
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = `残り時間: ${timeLeft}秒`;
+                if (timeLeft <= 0) gameOver();
+            }, 1000);
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `得点: ${score}`;
+        }
+
+        function updateLessonInfo() {
+            const lessonNames = {
+                'lesson7': '第7课',
+                'lesson8': '第8课',
+                'lesson9': '第9课'
+            };
+            document.getElementById('lessonInfo').textContent = 
+                `${lessonNames[currentLesson]} 第${currentGroup}组 单词数: ${currentPairs.length}`;
+        }
+
+        function checkGameComplete() {
+            const matched = document.querySelectorAll('.matched').length;
+            const total = document.querySelectorAll('.word-box').length;
+            if (matched === total) {
+                gameSuccess();
+            }
+        }
+
+        function endGame() {
+            clearInterval(timer);
+            document.getElementById('gameContainer').innerHTML = '';
+            document.getElementById('timer').textContent = '残り時間: 0秒';
+        }
+    </script>
+</body>
+</html>
